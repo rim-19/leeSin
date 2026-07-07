@@ -46,29 +46,26 @@
     <div class="plaque">
       <div class="score-label">Score</div>
       <div class="score-value" id="score">0</div>
-      <div class="sub combo-wrap">Combo <span class="multiplier" id="combo">x1</span></div>
+      <div class="sub combo-wrap">Combo <span id="combo">0</span> · <span class="multiplier" id="mult">x1</span></div>
     </div>
   </div>
 
   <div class="corner" id="hud-topright">
     <div class="plaque">
-      <div class="score-label">Wave</div>
-      <div class="wave-value" id="wave">1</div>
-      <div class="bar-label">The Eye</div>
-      <div class="bar"><div class="bar-fill hp" id="hp-fill"></div></div>
+      <div class="score-label">Accuracy</div>
+      <div class="wave-value" id="acc">100%</div>
+      <div class="bar-label">Song</div>
+      <div class="bar"><div class="bar-fill song" id="prog-fill"></div></div>
     </div>
   </div>
 
+  <div id="judge"></div>
   <div id="coach"></div>
   <div id="note"></div>
 
   <div id="abilities">
-    <div class="ability" id="chip-open"><span class="glyph">✋</span><span class="name">Sweep</span></div>
-    <div class="ability" id="chip-fist"><span class="glyph">✊</span><span class="name">Strike</span></div>
-    <div class="ability dragon" id="chip-R">
-      <span class="glyph">🐉</span><span class="name">Dragon</span>
-      <div class="ult-bar"><div class="ult-fill" id="ult-fill"></div></div>
-    </div>
+    <div class="ability catch" id="chip-open"><span class="glyph">✋</span><span class="name">Catch · Blue</span></div>
+    <div class="ability strike" id="chip-fist"><span class="glyph">✊</span><span class="name">Strike · Red</span></div>
   </div>
 </div>
 
@@ -87,10 +84,10 @@
   <div class="rope-div divider"></div>
   <div class="tagline">A duelist needs no eyes to see</div>
   <div class="desc">
-    Your hands are your weapons. <b>Open hand</b> becomes a chi aura that sweeps orbs
-    away; <b>closed fist</b> becomes a strike that shatters them. Orbs rush the Eye at
-    the center — hold them off, build your combo, and when the dragon is charged, bring
-    <b>both fists together</b> to unleash Dragon's Rage.
+    A rhythm of chi. Notes flow to the ring in time with the music — <b>catch the blue</b>
+    ones with an <b>open palm</b>, <b>strike the red</b> ones with a <b>fist</b>. Nail the timing,
+    keep the combo alive, and let the song carry you to the end.
+    <br /><span style="color:var(--gold);font-size:13px;letter-spacing:0.1em;">Load your own track below for a chart mapped to its beats — or play the steady fallback tempo.</span>
   </div>
   <div class="row">
     <button class="btn" id="btn-begin">Lock In</button>
@@ -122,7 +119,7 @@
   <div class="lmsg" id="lmsg">Awakening the temple…</div>
   <div id="fallback">
     <h2>A resource could not be loaded</h2>
-    <p>This game pulls Three.js, MediaPipe Hands and Matter.js from a CDN. Something —
+    <p>This game pulls Three.js and MediaPipe Hands from a CDN. Something —
       usually a sandboxed preview that blocks outside network requests — stopped one
       of them from loading.</p>
     <p><b>Fix:</b> download this folder and open it in Chrome or Edge on your own
@@ -146,7 +143,6 @@
   setTimeout(function () { if (!window.__eyeStarted && !window.__eyeFailed) window.__eyeFail('libraries did not load in time (network blocked?)'); }, 6000);
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js" onerror="window.__eyeFail('Matter.js')"></script>
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" onerror="window.__eyeFail('MediaPipe Hands')"></script>
 
 <script type="importmap">

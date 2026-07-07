@@ -77,6 +77,18 @@ b { color: #fff7ea; }
 .bar-fill { height: 100%; width: 100%; border-radius: 6px; transition: width 0.2s ease, background 0.4s; }
 .bar-fill.hp { background: linear-gradient(90deg, #1aa89e, var(--eye)); box-shadow: 0 0 12px var(--eye-glow); }
 .bar-fill.hp.low { background: linear-gradient(90deg, #b5202f, var(--danger)); box-shadow: 0 0 16px rgba(255,49,69,0.8); }
+.bar-fill.song { background: linear-gradient(90deg, var(--red), var(--gold)); box-shadow: 0 0 12px var(--gold-glow); width: 0%; }
+
+/* judgment text (Perfect / Good / Miss) */
+#judge { position: absolute; top: 34%; left: 0; right: 0; text-align: center; font-size: clamp(28px, 5vw, 54px); font-weight: 700; letter-spacing: 0.14em; text-transform: uppercase; pointer-events: none; opacity: 0; }
+#judge.show { animation: judgepop 0.6s ease forwards; }
+#judge.perfect { color: var(--eye); text-shadow: 0 0 24px var(--eye-glow), 0 0 48px var(--eye-glow); }
+#judge.good { color: var(--gold); text-shadow: 0 0 20px var(--gold-glow); }
+#judge.miss { color: var(--danger); text-shadow: 0 0 20px rgba(255,49,69,0.7); }
+@keyframes judgepop { 0% { opacity: 0; transform: scale(1.5); } 20% { opacity: 1; transform: scale(1); } 75% { opacity: 1; } 100% { opacity: 0; transform: scale(0.92); } }
+
+.ability.catch.learned { border-color: var(--eye); } .ability.catch .glyph { color: var(--eye); }
+.ability.strike.learned { border-color: var(--red); } .ability.strike .glyph { color: #ff8f98; }
 
 /* ability medallions (belt rings) */
 #abilities { position: absolute; bottom: 0; left: 0; right: 0; display: flex; gap: 26px; justify-content: center; padding: 18px 0 38px; }

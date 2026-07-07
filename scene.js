@@ -65,25 +65,24 @@ bgQuad.frustumCulled = false; bgQuad.renderOrder = -10; scene.add(bgQuad);
 export function setVideoTexture(tex) { bgMat.uniforms.uTex.value = tex; bgMat.uniforms.uHasTex.value = tex ? 1 : 0; }
 export function updateBackground(video) { if (video && video.videoWidth) { bgMat.uniforms.uAspectScreen.value = aspect; bgMat.uniforms.uAspectVideo.value = video.videoWidth / video.videoHeight; } }
 
-/* ── central defended core (danger ring + HP) ────────────────────────────*/
-const coreUniforms = { uTime: { value: 0 }, uHp: { value: 1 }, uFlash: { value: 0 } };
-const coreMat = new THREE.ShaderMaterial({
-  uniforms: coreUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
+/* ── central hit-ring (rhythm target; glows with your current pose) ──────*/
+const RINGR = CFG.rhythm.ringRadius;
+const ringUniforms = { uTime: { value: 0 }, uFlash: { value: 0 }, uColor: { value: new THREE.Color(CFG.colors.gold) }, uAlpha: { value: 0.4 } };
+const ringMat = new THREE.ShaderMaterial({
+  uniforms: ringUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
-  fragmentShader: `varying vec2 vUv; uniform float uTime,uHp,uFlash;
+  fragmentShader: `varying vec2 vUv; uniform float uTime,uFlash,uAlpha; uniform vec3 uColor;
     void main(){ vec2 p=vUv*2.0-1.0; float r=length(p); if(r>1.0) discard;
-      vec3 good=mix(vec3(1.0,0.28,0.32), vec3(0.25,0.88,0.82), uHp); // teal eye -> red
-      float coreGlow=smoothstep(0.42,0.0,r)*(0.8+0.3*sin(uTime*2.0));
-      float ring=smoothstep(0.04,0.0,abs(r-0.92))*(0.6+0.4*sin(uTime*1.5));
-      vec3 col=good*(coreGlow+ring) + vec3(1.0,0.2,0.25)*uFlash*smoothstep(1.0,0.0,r);
-      float a=clamp(coreGlow+ring+uFlash*0.5,0.0,1.0);
-      gl_FragColor=vec4(col*1.6,a); }`,
+      float ring=smoothstep(0.055,0.0,abs(r-0.83))*(0.7+0.3*sin(uTime*2.2));
+      float center=smoothstep(0.10,0.0,r)*0.35;
+      float glow=ring+center+uFlash*smoothstep(0.14,0.0,abs(r-0.83));
+      gl_FragColor=vec4(uColor*glow*(1.4+uFlash*1.5), clamp(glow*uAlpha,0.0,1.0)); }`,
 });
-const coreMesh = new THREE.Mesh(new THREE.PlaneGeometry(CFG.core.radius * 2, CFG.core.radius * 2), coreMat);
-coreMesh.position.z = -0.3; coreMesh.visible = false; scene.add(coreMesh);
-export function showCore(v) { coreMesh.visible = v; }
-export function setCoreHealth(frac) { coreUniforms.uHp.value = frac; }
-export function flashCore() { coreUniforms.uFlash.value = 1; }
+const hitRing = new THREE.Mesh(new THREE.PlaneGeometry(RINGR * 2.4, RINGR * 2.4), ringMat);
+hitRing.position.z = -0.2; hitRing.visible = false; scene.add(hitRing);
+export function showHitRing(v) { hitRing.visible = v; }
+export function setHitRingColor(color, alpha) { ringUniforms.uColor.value.copy(color); ringUniforms.uAlpha.value = alpha != null ? alpha : 1; }
+export function flashRing() { ringUniforms.uFlash.value = 1; }
 
 /* ── sigil ───────────────────────────────────────────────────────────────*/
 export const sigilUniforms = { uTime: { value: 0 }, uOpen: { value: 0.15 }, uPulse: { value: 0 }, uIntensity: { value: 0.55 }, uCyan: { value: new THREE.Color(CFG.colors.red) }, uGold: { value: new THREE.Color(CFG.colors.gold) } };
@@ -259,7 +258,7 @@ export function triggerSlowmo(d) { _slowmo = Math.max(_slowmo, d); }
 export function getSlowmo() { return _slowmo; }
 export function tickFx(dt) {
   if (_slowmo > 0) _slowmo -= dt;
-  coreUniforms.uFlash.value = Math.max(0, coreUniforms.uFlash.value - dt / CFG.core.staggerFlash);
+  ringUniforms.uFlash.value = Math.max(0, ringUniforms.uFlash.value - dt * 3.5);
   if (_shake > 0) { _shake = Math.max(0, _shake - dt * 2.5); camera.position.x = (Math.random() - 0.5) * _shake; camera.position.y = (Math.random() - 0.5) * _shake; }
   else { camera.position.x = 0; camera.position.y = 0; }
 }
@@ -270,5 +269,5 @@ export function resize() {
   renderer.setSize(window.innerWidth, window.innerHeight); composer.setSize(window.innerWidth, window.innerHeight); bloom.setSize(window.innerWidth / 2, window.innerHeight / 2);
 }
 window.addEventListener('resize', resize);
-export function updateSigilTime(t) { sigilUniforms.uTime.value = t; coreUniforms.uTime.value = t; }
+export function updateSigilTime(t) { sigilUniforms.uTime.value = t; ringUniforms.uTime.value = t; }
 export function render() { composer.render(); }

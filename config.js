@@ -28,26 +28,29 @@ export const CFG = {
     depthScale: 3.0,       // landmark z -> scene depth
   },
 
-  // Central core you're defending. Forgiving: regenerates, never hard-fails.
-  core: { hp: 100, regen: 3.5, radius: 1.15, orbDamage: 9, staggerFlash: 0.5 },
-
-  // Orbs seek the core.
-  orbs: {
-    rMin: 0.34, rMax: 0.55,
-    seekBase: 1.05, seekPerWave: 0.16, seekMax: 2.6,
-    hpBase: 1.0, hpPerWave: 0.45,
-    fistDamage: 6, sweepChip: 0.7, sweepChipCd: 0.22, sweepPush: 7.5,
-    jitter: 0.5,
+  // Chi Rhythm. Notes fly inward to a central ring; open palm catches blue,
+  // fist strikes red, timed to your loaded song (or a fallback tempo).
+  rhythm: {
+    leadTime: 1.9,        // seconds a note is visible before it must be hit
+    perfectWindow: 0.12,  // ± seconds for a Perfect
+    goodWindow: 0.26,     // ± seconds for a Good (outside = Miss)
+    ringRadius: 1.15,     // hit-ring radius (world units)
+    hitZone: 3.2,         // a hand within this radius of center can register hits
+    spawnRadius: 9.5,     // where notes fly in from
+    noteRadius: 0.34,
+    minGap: 0.26,         // collapse onsets closer than this
+    startDelay: 2.2,      // silence before the first note (lead-in)
+    endPad: 3.0,          // seconds after the last note before the finale
   },
 
+  // Offline onset detection for the loaded song.
+  analysis: { hop: 512, sensitivity: 1.45, window: 22 },
+
+  // Fallback chart when no audio is loaded.
+  fallback: { bpm: 100, duration: 80 },
+
   // Scoring / combo.
-  scoring: { kill: 100, comboMax: 99, comboDecay: 2.6 },
-
-  // Dragon's Rage ultimate — charged by kills, released with both fists together.
-  ult: { chargePerKill: 8, chargeMax: 100, fistsTogether: 0.3, score: 800 },
-
-  // Waves / difficulty / finale trigger.
-  waves: { baseCount: 4, perWave: 2, betweenWaves: 2.6, firstDelay: 1.2, finaleWave: 6, finaleScore: 5000 },
+  scoring: { perfect: 100, good: 45, comboMax: 999, multTiers: [0, 8, 20, 40] },
 
   // Personal-message cadence (seconds).
   notes: { intervalMin: 30, intervalMax: 45, holdMs: 7000 },

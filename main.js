@@ -1,8 +1,7 @@
 /* ============================================================================
- *  main.js  —  orchestration: webcam, HUD, short teach, finale, note cadence,
- *  event handling, and the single render loop. Hands are smoothed toward the
- *  latest tracked landmark every frame, so play feels fluid at 60fps even
- *  though MediaPipe tracks at ~30fps.
+ *  main.js  —  orchestration for Chi Rhythm: webcam, HUD, short teach, song
+ *  playback + clock, finale, note cadence, and the render loop. Hand positions
+ *  are smoothed each frame so play feels fluid despite ~30fps tracking.
  * ==========================================================================*/
 import * as SCENE from './scene.js';
 import * as GES from './gestures.js';
@@ -18,33 +17,34 @@ window.__eyeStarted = true;
 
 const video = $('webcam');
 const el = {
-  hud: $('hud'), score: $('score'), combo: $('combo'), wave: $('wave'),
-  hpFill: $('hp-fill'), ultFill: $('ult-fill'), ultChip: $('chip-R'),
-  coach: $('coach'), note: $('note'), fps: $('fps-hint'), vignette: $('damage-vignette'),
-  intro: $('intro'), trialPanel: $('trial-panel'), trialSkip: $('trial-skip'), frame: $('frame'),
+  hud: $('hud'), score: $('score'), combo: $('combo'), mult: $('mult'), acc: $('acc'),
+  progFill: $('prog-fill'), judge: $('judge'),
+  coach: $('coach'), note: $('note'), fps: $('fps-hint'), frame: $('frame'),
+  intro: $('intro'), trialPanel: $('trial-panel'), trialSkip: $('trial-skip'),
   finale: $('finale'), finaleText: $('finale-text'),
 };
-const chips = { open: $('chip-open'), fist: $('chip-fist'), R: $('chip-R') };
+const chips = { open: $('chip-open'), fist: $('chip-fist') };
 
 /* ── HUD ─────────────────────────────────────────────────────────────────*/
-let lastCombo = 1;
+let lastCombo = 0;
 function refreshHud() {
   el.score.textContent = AB.Game.score;
-  el.combo.textContent = 'x' + AB.Game.combo;
-  el.wave.textContent = Math.max(1, AB.Game.wave);
+  el.combo.textContent = AB.Game.combo;
+  el.mult.textContent = 'x' + AB.Game.mult;
+  el.acc.textContent = AB.Game.accuracy + '%';
+  el.progFill.style.width = (AB.Game.progress * 100) + '%';
   if (AB.Game.combo !== lastCombo) {
-    el.combo.parentElement.classList.remove('pop'); void el.combo.offsetWidth; el.combo.parentElement.classList.add('pop');
+    if (AB.Game.combo > lastCombo) { el.combo.parentElement.classList.remove('pop'); void el.combo.offsetWidth; el.combo.parentElement.classList.add('pop'); }
     lastCombo = AB.Game.combo;
   }
-  const hp = AB.Game.coreHp / CFG.core.hp;
-  el.hpFill.style.width = (hp * 100) + '%';
-  el.hpFill.classList.toggle('low', hp < 0.35);
-  const uc = AB.Game.ultCharge / CFG.ult.chargeMax;
-  el.ultFill.style.width = (uc * 100) + '%';
-  el.ultChip.classList.toggle('ready', uc >= 1);
 }
-function flashChip(c) { const e = chips[c]; if (!e) return; e.classList.add('fired'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('fired'), 240); }
-function flashVignette() { el.vignette.classList.add('hit'); clearTimeout(el.vignette._t); el.vignette._t = setTimeout(() => el.vignette.classList.remove('hit'), 260); }
+function flashChip(c) { const e = chips[c]; if (!e) return; e.classList.add('fired'); clearTimeout(e._t); e._t = setTimeout(() => e.classList.remove('fired'), 220); }
+let judgeTimer = 0;
+function showJudge(j) {
+  el.judge.textContent = j.toUpperCase();
+  el.judge.className = 'show ' + j;
+  judgeTimer = 0.6;
+}
 
 let coachTimer = 0;
 function coach(text, hold = 3) { if (!text) { el.coach.classList.remove('show'); coachTimer = 0; return; } el.coach.textContent = text; el.coach.classList.add('show'); coachTimer = hold; }
@@ -59,18 +59,17 @@ function milestoneNote(key) { if (key === 'firstUltimate') { if (shownMilestones
 function handleEvents() {
   for (const ev of AB.drainEvents()) {
     if (ev.type === 'fired') flashChip(ev.ab);
+    else if (ev.type === 'judgment') showJudge(ev.j);
     else if (ev.type === 'coach') coach(ev.text, ev.hold);
     else if (ev.type === 'milestone') milestoneNote(ev.key);
-    else if (ev.type === 'coreHit') flashVignette();
-    else if (ev.type === 'ult') coach("DRAGON'S RAGE", 1.6);
     else if (ev.type === 'finale') enterFinale();
   }
 }
 
-/* ── short teach (open, then fist) — taught before play, live-detected ────*/
+/* ── short teach (catch = open, strike = fist) ───────────────────────────*/
 const TEACH = [
-  { kind: 'open', name: 'Sweep', chip: 'open', desc: 'Hold an OPEN HAND up. It becomes a chi aura that sweeps orbs away.', detect: GES.anyHandOpen, hold: 0.5 },
-  { kind: 'fist', name: 'Strike', chip: 'fist', desc: 'Now CLOSE YOUR FIST. It becomes a strike core that shatters orbs on touch.', detect: GES.anyHandFist, hold: 0.35 },
+  { kind: 'open', name: 'Catch', chip: 'open', desc: 'Hold an OPEN PALM near the center. Blue chi notes are caught with an open hand.', detect: GES.anyHandOpen, hold: 0.5 },
+  { kind: 'fist', name: 'Strike', chip: 'fist', desc: 'Now make a FIST. Red chi notes are struck with a closed fist.', detect: GES.anyHandFist, hold: 0.35 },
 ];
 let trialActive = false, tIndex = 0, tDemo = 0, tHeld = 0;
 function buildPips() { const p = $('trial-pips'); p.innerHTML = ''; TEACH.forEach(() => { const d = document.createElement('div'); d.className = 'trial-pip'; p.appendChild(d); }); }
@@ -83,7 +82,7 @@ function loadStep() {
   const st = $('trial-status'); st.textContent = 'Try it…'; st.classList.remove('done');
   updatePips(); tDemo = 0; tHeld = 0;
 }
-function beginTrial() { trialActive = true; tIndex = 0; SCENE.showCore(false); el.trialPanel.classList.add('show'); el.trialSkip.style.display = 'block'; buildPips(); loadStep(); }
+function beginTrial() { trialActive = true; tIndex = 0; SCENE.showHitRing(false); el.trialPanel.classList.add('show'); el.trialSkip.style.display = 'block'; buildPips(); loadStep(); }
 function advance() {
   const s = TEACH[tIndex]; chips[s.chip].classList.add('learned');
   const st = $('trial-status'); st.textContent = '✓ ' + s.name + ' learned'; st.classList.add('done');
@@ -91,7 +90,7 @@ function advance() {
   tIndex++;
   if (tIndex >= TEACH.length) setTimeout(endTrial, 800); else setTimeout(loadStep, 850);
 }
-function endTrial() { trialActive = false; SCENE.hideGhost(); el.trialPanel.classList.remove('show'); el.trialSkip.style.display = 'none'; startFreePlay(); }
+function endTrial() { trialActive = false; SCENE.hideGhost(); el.trialPanel.classList.remove('show'); el.trialSkip.style.display = 'none'; startSong(); }
 function skipStep() { chips[TEACH[tIndex].chip].classList.add('learned'); tIndex++; if (tIndex >= TEACH.length) endTrial(); else loadStep(); }
 function updateTrial(dt) {
   if (!trialActive) return;
@@ -108,16 +107,20 @@ function enterFinale() {
 }
 
 /* ── mode flow ───────────────────────────────────────────────────────────*/
-let mode = 'intro';
-function startFreePlay() {
-  mode = 'play'; el.hud.classList.add('show'); el.frame.classList.add('show'); SCENE.showCore(true);
+let mode = 'intro', songStart = 0;
+function startSong() {
+  mode = 'play'; el.hud.classList.add('show'); el.frame.classList.add('show'); SCENE.showHitRing(true);
   chips.open.classList.add('learned'); chips.fist.classList.add('learned');
-  AB.unlockPlay(); AB.startWaves(); SCENE.seedAmbient();
-  coach('Defend the core — orbs are coming', 3.2);
-  setTimeout(nextAmbientNote, 5000);
+  AB.startSong(AUDIO.getChart(), AUDIO.getDuration());
+  if (AUDIO.isLoaded()) AUDIO.startPlayback();
+  songStart = performance.now() / 1000;
+  SCENE.seedAmbient();
+  coach(AUDIO.isLoaded() ? 'Catch blue with an open palm · strike red with a fist'
+                         : 'No track loaded — steady tempo · open catches, fist strikes', 3.4);
+  setTimeout(nextAmbientNote, 8000);
 }
 $('btn-begin').addEventListener('click', () => { el.intro.classList.add('hidden'); AUDIO.resumeAudio(); mode = 'trial'; beginTrial(); });
-$('btn-skip-trial').addEventListener('click', () => { el.intro.classList.add('hidden'); AUDIO.resumeAudio(); chips.open.classList.add('learned'); chips.fist.classList.add('learned'); startFreePlay(); });
+$('btn-skip-trial').addEventListener('click', () => { el.intro.classList.add('hidden'); AUDIO.resumeAudio(); chips.open.classList.add('learned'); chips.fist.classList.add('learned'); startSong(); });
 el.trialSkip.addEventListener('click', skipStep);
 AUDIO.initAudioPicker($('audio-file'), $('audio-status'));
 
@@ -138,14 +141,13 @@ function loop() {
   const now = performance.now() / 1000;
   let dt = Math.min(0.05, now - last); last = now; time += dt;
   const slow = SCENE.getSlowmo() > 0;
-  const gdt = dt * (slow ? 0.35 : 1) * (finaleState ? 0.5 : 1);
 
   GES.analyzeHands();
   AUDIO.updateAudio(dt);
   const beat = AUDIO.getBeat();
   SCENE.updateBackground(video);
 
-  // hands → cursors + trails, mapping z-depth into the scene
+  // hands → cursors + trails
   for (let i = 0; i < 2; i++) {
     const st = GES.handState[i], rb = SCENE.ribbons[i];
     if (st.present) {
@@ -159,12 +161,14 @@ function loop() {
 
   if (mode === 'trial') updateTrial(dt);
   if (mode === 'play') {
-    AB.updateAbilities(gdt, now);
+    const songTime = AUDIO.isLoaded() ? AUDIO.getSongTime() : (now - songStart);
+    AB.updateRhythm(songTime, now);
     handleEvents(); refreshHud();
     if (!finaleState) { noteTimer -= dt; if (noteTimer <= 0) nextAmbientNote(); }
   }
+  if (judgeTimer > 0) { judgeTimer -= dt; if (judgeTimer <= 0) el.judge.className = ''; }
 
-  // sigil + core time
+  // sigil
   SCENE.updateSigilTime(time);
   SCENE.sigilUniforms.uPulse.value = Math.max(0, SCENE.sigilUniforms.uPulse.value - dt * 1.5) + beat * 0.3;
   const openTarget = mode === 'intro' ? 0.15 : (finaleState ? 1.0 : 0.4);

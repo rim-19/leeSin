@@ -1,25 +1,28 @@
 # Eye of the Blind Monk
 
-A webcam hand-tracking game themed on League of Legends' **Lee Sin**. Your hands
-*are* the weapons — the game reads them through your webcam (MediaPipe Hands) and
-turns them into chi, rendered in Three.js with real bloom, custom shaders, and
-GPU particles.
+A webcam hand-tracking **rhythm game** themed on League of Legends' **Lee Sin**.
+The game reads your hands through your webcam (MediaPipe Hands) and turns them
+into chi, rendered in Three.js with real bloom, custom shaders, and GPU particles.
 
 ## How to play
 
 A **webcam is required**, and browsers only grant camera access over `https://`
 or `http://localhost`.
 
-- **Open hand** → a sweeping chi aura that knocks orbs back (crowd control)
-- **Closed fist** → a strike core that shatters orbs on contact (damage)
-- **Orbs rush your core** at the center — hold them off. Killing them builds your
-  **combo** and charges the dragon.
-- When **Dragon** is charged, bring **both fists together** to unleash
-  **Dragon's Rage** — a screen-clearing burst with shake and slow-mo.
+Chi-orbs flow inward to a ring at the center in time with the music:
 
-It's continuous and forgiving: your core regenerates, there's no hard game-over,
-and a short teach shows you the two hand states before play. Reach the final wave
-(or the score threshold) and the game eases into a calm finale.
+- **Blue note → OPEN PALM** (catch) as it lands on the ring
+- **Red note → FIST** (strike) as it lands on the ring
+
+Nail the timing for **Perfect / Good**; miss the window and your **combo** breaks.
+Combo drives a score multiplier, streaks reveal the personal messages, and the
+song ending blooms into the finale letter. A short teach shows the two hand
+states before play.
+
+**Load your own audio** on the intro screen and the game decodes it and runs
+offline onset detection to build a note-chart mapped to *that track's* beats.
+No track loaded → a steady fallback tempo so it still plays. The file stays on
+your machine — nothing is uploaded.
 
 ## Run it
 
@@ -43,31 +46,32 @@ All prose lives in **`messages.js`** — the only file with words to change:
 
 > Note: whatever you host is public — anyone with the URL can read `messages.js`.
 
-Gameplay feel (hand sensitivity/smoothing, orb speed, wave difficulty, finale
-trigger) lives in **`config.js`** — start with `hands.smoothing` and
-`orbs.seekSpeed` if you want to tune it.
+Gameplay feel lives in **`config.js`** — if timing feels too strict, widen
+`rhythm.perfectWindow` / `rhythm.goodWindow`; if the chart is too dense or too
+sparse, tune `analysis.sensitivity` and `rhythm.minGap`.
 
-## Optional audio-reactive layer
+## Audio-reactive layer
 
-On the intro screen you can load **your own local audio file**. A Web Audio
-`AnalyserNode` drives bloom intensity and pulse timing off the beat. Nothing is
-fetched or embedded — the file never leaves your machine.
+Loading a track does two things: (1) offline **onset detection** builds the
+note-chart from the song's beats, and (2) a live Web Audio `AnalyserNode` drives
+bloom intensity and sigil/particle pulses off the music while you play. Nothing
+is fetched or embedded — the file never leaves your machine.
 
 ## Files
 
 ```
 index.html    page + CDN loading + fallback watchdog
 style.css     HUD / intro / teach / finale styling
-config.js     tunable thresholds, radii, timings, difficulty
+config.js     tunable timing windows, chart sensitivity, difficulty
 messages.js   ← editable personal text (prose lives only here)
-scene.js      Three.js setup, shaders, bloom, particles, hand cursors, FX
+scene.js      Three.js setup, shaders, bloom, particles, hand cursors, hit-ring
 gestures.js   MediaPipe hand tracking + smoothing + open/fist state
-abilities.js  chi combat, orb physics (Matter.js), scoring, waves, ultimate
-audio.js      Web Audio analyser (optional)
+abilities.js  Chi Rhythm engine: notes, timing judgment, combo/score
+audio.js      Web Audio: decode + offline onset detection + playback clock
 main.js       game loop, HUD, teach, finale, orchestration
 ```
 
-CDN libraries: Three.js `0.160.0`, MediaPipe Hands `0.4.x`, Matter.js `0.19.0`.
+CDN libraries: Three.js `0.160.0`, MediaPipe Hands `0.4.x`.
 
 Performance: bloom renders at half resolution, hand tracking uses the lite model
 throttled off the render thread, and hand positions are smoothed each frame — so

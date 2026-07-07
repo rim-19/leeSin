@@ -93,11 +93,6 @@ export function analyzeHands() {
   }
 }
 
-export function bothFistsTogether() {
-  const a = handState[0], b = handState[1];
-  return a.present && b.present && a.fist && b.fist && dist2(a, b) < CFG.ult.fistsTogether;
-}
-
 /* ── trial detectors (short teach: hold open, then make a fist) ───────────*/
 export function anyHandOpen() { return handState.some((s) => s.present && s.open); }
 export function anyHandFist() { return handState.some((s) => s.present && s.fist); }
