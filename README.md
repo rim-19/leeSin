@@ -1,37 +1,37 @@
 # Eye of the Blind Monk
 
 A webcam hand-tracking game themed on League of Legends' **Lee Sin**. Your hands
-are the controller: the game reads them through your webcam (MediaPipe Hands) and
-turns gestures into Lee Sin's abilities, rendered in Three.js with real bloom,
-custom chi-energy shaders, and GPU particles.
+*are* the weapons — the game reads them through your webcam (MediaPipe Hands) and
+turns them into chi, rendered in Three.js with real bloom, custom shaders, and
+GPU particles.
 
-## Play
+## How to play
 
 A **webcam is required**, and browsers only grant camera access over `https://`
 or `http://localhost`.
 
+- **Open hand** → a sweeping chi aura that knocks orbs back (crowd control)
+- **Closed fist** → a strike core that shatters orbs on contact (damage)
+- **Orbs rush your core** at the center — hold them off. Killing them builds your
+  **combo** and charges the dragon.
+- When **Dragon** is charged, bring **both fists together** to unleash
+  **Dragon's Rage** — a screen-clearing burst with shake and slow-mo.
+
+It's continuous and forgiving: your core regenerates, there's no hard game-over,
+and a short teach shows you the two hand states before play. Reach the final wave
+(or the score threshold) and the game eases into a calm finale.
+
+## Run it
+
 - **Hosted (recommended):** drop this folder on any static host — GitHub Pages,
-  Vercel, Netlify — and open the URL. No build step, all paths are relative.
-- **Locally:** serve the folder and open localhost:
+  Vercel, Netlify — and open the URL. No build step; all paths are relative.
+- **Locally:**
   ```
   python -m http.server 8000      →  http://localhost:8000
   ```
 
 If a CDN is blocked (some sandboxed previews do this), the page shows a message
 explaining how to run it in a real browser.
-
-## Gestures
-
-| Ability | Gesture |
-| --- | --- |
-| **Q · Sonic Wave** | point your index finger and flick it forward |
-| **Q2 · Resonating Strike** | within 2s of a Sonic Wave: make a fist, hold, then open your hand |
-| **W · Safeguard** | bring an open palm to your chest |
-| **E · Tempest** | push both open palms apart |
-| **R · Dragon's Rage** | bring both fists together, then thrust forward |
-
-A **mandatory guided trial** teaches each gesture with a ghost-hand demo before
-free play — no ability can be used until you've performed it once.
 
 ## Editing the personal text
 
@@ -41,27 +41,34 @@ All prose lives in **`messages.js`** — the only file with words to change:
 - `milestoneNotes` — lines tied to moments (first ultimate, combo x5, wave cleared)
 - `finaleLetter` — the closing message shown in the calm finale
 
-Gameplay feel (cooldowns, gesture sensitivity, wave difficulty, finale trigger)
-lives in **`config.js`**.
+> Note: whatever you host is public — anyone with the URL can read `messages.js`.
+
+Gameplay feel (hand sensitivity/smoothing, orb speed, wave difficulty, finale
+trigger) lives in **`config.js`** — start with `hands.smoothing` and
+`orbs.seekSpeed` if you want to tune it.
 
 ## Optional audio-reactive layer
 
 On the intro screen you can load **your own local audio file**. A Web Audio
-`AnalyserNode` drives bloom intensity and sigil/particle pulses off the beat.
-Nothing is fetched or embedded — the file never leaves your machine.
+`AnalyserNode` drives bloom intensity and pulse timing off the beat. Nothing is
+fetched or embedded — the file never leaves your machine.
 
 ## Files
 
 ```
 index.html    page + CDN loading + fallback watchdog
-style.css     HUD / intro / trial / finale styling
-config.js     tunable thresholds, cooldowns, timings
+style.css     HUD / intro / teach / finale styling
+config.js     tunable thresholds, radii, timings, difficulty
 messages.js   ← editable personal text (prose lives only here)
-scene.js      Three.js setup, shaders, bloom, particles, FX
-gestures.js   MediaPipe hand tracking + gesture recognition
-abilities.js  ability effects, orb physics (Matter.js), scoring, waves
+scene.js      Three.js setup, shaders, bloom, particles, hand cursors, FX
+gestures.js   MediaPipe hand tracking + smoothing + open/fist state
+abilities.js  chi combat, orb physics (Matter.js), scoring, waves, ultimate
 audio.js      Web Audio analyser (optional)
-main.js       game loop, HUD, guided trial, finale, orchestration
+main.js       game loop, HUD, teach, finale, orchestration
 ```
 
 CDN libraries: Three.js `0.160.0`, MediaPipe Hands `0.4.x`, Matter.js `0.19.0`.
+
+Performance: bloom renders at half resolution, hand tracking uses the lite model
+throttled off the render thread, and hand positions are smoothed each frame — so
+it stays fluid even though tracking runs at ~30fps.

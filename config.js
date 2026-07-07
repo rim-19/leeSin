@@ -1,58 +1,54 @@
 /* ============================================================================
  *  config.js  —  all tunable numbers in one place. No prose here (see messages.js).
- *  Tweak thresholds if gestures feel too eager or too stubborn on your webcam.
+ *  If the feel is off on your webcam, tweak `hands` (smoothing/radii) and
+ *  `orbs.seekSpeed`. Everything is intentionally forgiving.
  * ==========================================================================*/
 
 export const CFG = {
   playerName: "SUMMONER",
 
-  // World / camera — an orthographic play-plane VIEW_H units tall.
-  view: { height: 10 },
+  view: { height: 10 },                 // world units tall (ortho camera)
+  colors: { cyan: 0x3fe0ff, gold: 0xf0c060, orb: 0xff5a3c, danger: 0xff3b52 },
 
-  colors: { cyan: 0x3fe0ff, gold: 0xf0c060, orb: 0xff5a3c },
+  // Bloom (UnrealBloomPass). Rendered at half-res for performance.
+  bloom: { base: 0.75, radius: 0.5, threshold: 0.5, finale: 1.2 },
+  perf: { maxPixelRatio: 1.25, trackFps: 30, modelComplexity: 0 },
 
-  // Bloom (UnrealBloomPass). High threshold keeps the dim webcam crisp;
-  // only glowing chi/sigils/particles bloom.
-  bloom: { base: 0.9, radius: 0.55, threshold: 0.55, finale: 1.35 },
+  // Hands = weapons. Positions are smoothed toward the latest tracked landmark
+  // every render frame, so motion stays fluid between 30fps tracking updates.
+  hands: {
+    smoothing: 0.4,        // 0..1 higher = snappier / lower = smoother
+    openRadius: 1.35,      // world radius of the sweeping aura (open hand)
+    fistRadius: 0.75,      // world radius of the strike core (closed fist)
+    openThresh: 0.6,       // openAmount above this => open (hysteresis)
+    fistThresh: 0.35,      // openAmount below this => fist
+    depthScale: 3.0,       // landmark z -> scene depth
+  },
 
-  // Ability cooldowns, seconds.
-  cooldowns: { Q: 0.35, Q2: 0.5, W: 6, E: 4, R: 12 },
+  // Central core you're defending. Forgiving: regenerates, never hard-fails.
+  core: { hp: 100, regen: 3.5, radius: 1.15, orbDamage: 9, staggerFlash: 0.5 },
 
-  // Gesture detection thresholds (normalized MediaPipe units unless noted).
-  gesture: {
-    flickSpeed: 2.2,        // index-tip speed to fire Sonic Wave (per second)
-    trialFlickSpeed: 1.8,   // forgiving threshold used during the trial
-    fistHoldMin: 0.25,      // seconds a fist must be held to arm a release
-    comboWindow: 2.0,       // seconds after a Sonic Wave that Q2 can combo
-    pushApartRate: 1.6,     // hands-separating rate for Tempest (per second)
-    pushApartMinDist: 0.28, // hands must be at least this far apart
-    fistsTogetherDist: 0.22,// both fists must be closer than this for the ult
-    thrustZ: -1.2,          // combined palm z-velocity toward camera = thrust
-    thrustY: 5.0,           // ...or combined vertical velocity as a fallback
-    chestY: 0.58,           // palm below this (lower frame) counts as "chest"
-    chestX: 0.28,           // palm within this of center-x counts as "chest"
-    openPalmFingers: 4,     // extended fingers to count as an open palm
+  // Orbs seek the core.
+  orbs: {
+    rMin: 0.34, rMax: 0.55,
+    seekBase: 1.05, seekPerWave: 0.16, seekMax: 2.6,
+    hpBase: 1.0, hpPerWave: 0.45,
+    fistDamage: 6, sweepChip: 0.7, sweepChipCd: 0.22, sweepPush: 7.5,
+    jitter: 0.5,
   },
 
   // Scoring / combo.
-  scoring: {
-    orbKill: 120, resonate: 220, tempest: 0, safeguard: 30, ultimate: 300,
-    comboMax: 99, comboDecay: 3.2,
-  },
+  scoring: { kill: 100, comboMax: 99, comboDecay: 2.6 },
+
+  // Dragon's Rage ultimate — charged by kills, released with both fists together.
+  ult: { chargePerKill: 8, chargeMax: 100, fistsTogether: 0.3, score: 800 },
 
   // Waves / difficulty / finale trigger.
-  waves: {
-    baseCount: 3, perWave: 1.5, hpPerWave: 0.6,
-    betweenWaves: 3.0, firstDelay: 0.8,
-    finaleWave: 6, finaleScore: 4000,
-  },
+  waves: { baseCount: 4, perWave: 2, betweenWaves: 2.6, firstDelay: 1.2, finaleWave: 6, finaleScore: 5000 },
 
   // Personal-message cadence (seconds).
   notes: { intervalMin: 30, intervalMax: 45, holdMs: 7000 },
 
-  // Physics.
-  physics: { ppu: 60, frictionAir: 0.015 },
-
-  // MediaPipe.
-  mediapipe: { maxNumHands: 2, modelComplexity: 1, minDetection: 0.6, minTracking: 0.6 },
+  physics: { ppu: 60, frictionAir: 0.02 },
+  mediapipe: { maxNumHands: 2, minDetection: 0.55, minTracking: 0.5 },
 };

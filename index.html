@@ -7,44 +7,45 @@
 <link rel="stylesheet" href="./style.css" />
 <!--
   EYE OF THE BLIND MONK — a webcam hand-tracking game themed on Lee Sin.
-  Static site, no build step. Just host the folder (GitHub Pages / Vercel /
-  any static host) or open over http://localhost. A webcam is required, and
-  browsers only grant camera access over https:// or localhost.
+  Your hands are chi weapons: OPEN HAND sweeps orbs away, CLOSED FIST shatters
+  them. Defend the core. Charge the dragon, slam both fists to unleash it.
 
-  Files:
-    index.html · style.css · main.js · scene.js · gestures.js
-    abilities.js · audio.js · config.js · messages.js  (edit messages.js for text)
+  Static site, no build step. Host the folder (GitHub Pages / Vercel) or open
+  over http://localhost. A webcam is required (https:// or localhost only).
+  Edit messages.js to change the personal text.
 -->
 </head>
 <body>
 
 <div id="stage"></div>
 <video id="webcam" playsinline muted></video>
+<div id="damage-vignette"></div>
 
 <!-- HUD -->
 <div id="hud">
   <div class="corner" id="hud-topleft">
-    <div class="score-block">
-      <div class="score-label">Score</div>
-      <div class="score-value" id="score">0</div>
-      <div class="sub">Combo <span class="multiplier" id="combo">x1</span></div>
-    </div>
+    <div class="score-label">Score</div>
+    <div class="score-value" id="score">0</div>
+    <div class="sub combo-wrap">Combo <span class="multiplier" id="combo">x1</span></div>
   </div>
+
   <div class="corner" id="hud-topright">
     <div class="score-label">Wave</div>
     <div class="wave-value" id="wave">1</div>
-    <div class="sub" id="orbs-left">Orbs 0</div>
+    <div class="bar-label">Core</div>
+    <div class="bar"><div class="bar-fill hp" id="hp-fill"></div></div>
   </div>
 
   <div id="coach"></div>
   <div id="note"></div>
 
   <div id="abilities">
-    <div class="ability locked" data-ab="Q"><span class="key">Q</span><span class="glyph">➤</span><span class="name">Sonic Wave</span><div class="cd"></div></div>
-    <div class="ability locked" data-ab="Q2"><span class="key">Q2</span><span class="glyph">⇶</span><span class="name">Resonate</span><div class="cd"></div></div>
-    <div class="ability locked" data-ab="W"><span class="key">W</span><span class="glyph">✥</span><span class="name">Safeguard</span><div class="cd"></div></div>
-    <div class="ability locked" data-ab="E"><span class="key">E</span><span class="glyph">✷</span><span class="name">Tempest</span><div class="cd"></div></div>
-    <div class="ability locked" data-ab="R"><span class="key">R</span><span class="glyph">✹</span><span class="name">Dragon's Rage</span><div class="cd"></div></div>
+    <div class="ability" id="chip-open"><span class="glyph">✋</span><span class="name">Sweep</span></div>
+    <div class="ability" id="chip-fist"><span class="glyph">✊</span><span class="name">Strike</span></div>
+    <div class="ability dragon" id="chip-R">
+      <span class="glyph">🐉</span><span class="name">Dragon</span>
+      <div class="ult-bar"><div class="ult-fill" id="ult-fill"></div></div>
+    </div>
   </div>
 </div>
 
@@ -56,13 +57,14 @@
   <div class="title">Eye of the <span class="accent">Blind Monk</span></div>
   <div class="tagline">A duelist needs no eyes to see</div>
   <div class="desc">
-    Your hands are your weapons. This game watches them through your webcam and turns
-    gesture into chi. First you will be taught Lee Sin's kit, one motion at a time —
-    only what you have learned can be summoned. Then the orbs come.
+    Your hands are your weapons. <b>Open hand</b> becomes a chi aura that sweeps orbs
+    away; <b>closed fist</b> becomes a strike that shatters them. Orbs rush your core —
+    hold them off, build your combo, and when the dragon is charged, bring
+    <b>both fists together</b> to unleash Dragon's Rage.
   </div>
   <div class="row">
     <button class="btn" id="btn-begin">Lock In</button>
-    <button class="btn ghost" id="btn-skip-trial">Skip Trial</button>
+    <button class="btn ghost" id="btn-skip-trial">Skip Teach</button>
   </div>
   <div class="audio-line">
     <label class="audio-pill" for="audio-file">♪ Load your own audio (optional)</label>
@@ -71,15 +73,15 @@
   </div>
 </div>
 
-<!-- Guided trial -->
+<!-- Short teach -->
 <div id="trial-panel">
-  <div id="trial-step">Trial 1 / 5</div>
-  <div id="trial-name">Sonic Wave <span id="trial-key">[Q]</span></div>
+  <div id="trial-step">Learn 1 / 2</div>
+  <div id="trial-name">Sweep</div>
   <div id="trial-desc"></div>
-  <div id="trial-status">Watch the ghost hand…</div>
+  <div id="trial-status">Try it…</div>
   <div class="trial-progress" id="trial-pips"></div>
 </div>
-<button class="btn ghost" id="trial-skip" style="display:none;">Skip step</button>
+<button class="btn ghost" id="trial-skip" style="display:none;">Skip</button>
 
 <!-- Finale -->
 <div id="finale"><div id="finale-text"></div></div>
@@ -107,30 +109,21 @@
     var s = document.getElementById('spinner'), m = document.getElementById('lmsg');
     var fb = document.getElementById('fallback'), er = document.getElementById('fallback-err');
     document.getElementById('loader').style.display = 'flex';
-    if (s) s.style.display = 'none';
-    if (m) m.style.display = 'none';
-    if (fb) fb.style.display = 'block';
-    if (er && what) er.textContent = 'Failed: ' + what;
+    if (s) s.style.display = 'none'; if (m) m.style.display = 'none';
+    if (fb) fb.style.display = 'block'; if (er && what) er.textContent = 'Failed: ' + what;
     window.__eyeFailed = true;
   };
-  // If the ES module graph (Three.js addons) never boots, surface the fallback.
   setTimeout(function () { if (!window.__eyeStarted && !window.__eyeFailed) window.__eyeFail('libraries did not load in time (network blocked?)'); }, 6000);
 </script>
 
-<!-- Matter.js + MediaPipe Hands as classic globals (load before the module) -->
-<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js"
-        onerror="window.__eyeFail('Matter.js')"></script>
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js"
-        onerror="window.__eyeFail('MediaPipe Hands')"></script>
+<script src="https://cdn.jsdelivr.net/npm/matter-js@0.19.0/build/matter.min.js" onerror="window.__eyeFail('Matter.js')"></script>
+<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" onerror="window.__eyeFail('MediaPipe Hands')"></script>
 
-<!-- Three.js via importmap (ESM). Our own modules import each other relatively. -->
 <script type="importmap">
-{
-  "imports": {
+{ "imports": {
     "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
     "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
-  }
-}
+} }
 </script>
 <script type="module" src="./main.js"></script>
 
