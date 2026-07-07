@@ -8,7 +8,10 @@ export const CFG = {
   playerName: "SUMMONER",
 
   view: { height: 10 },                 // world units tall (ortho camera)
-  colors: { cyan: 0x3fe0ff, gold: 0xf0c060, orb: 0xff5a3c, danger: 0xff3b52 },
+  // Lee Sin palette: teal "eye" chi (his canonical ability colour), crimson
+  // bandages, Ionian gold, bone white. `cyan` kept as an alias for `eye` so
+  // nothing breaks. Open hand = eye teal, fist = crimson, core = the eye.
+  colors: { eye: 0x3fe0d6, red: 0xe23b46, gold: 0xf0c060, bone: 0xf2e6d2, orb: 0xff6a3c, danger: 0xff3145, cyan: 0x3fe0d6 },
 
   // Bloom (UnrealBloomPass). Rendered at half-res for performance.
   bloom: { base: 0.75, radius: 0.5, threshold: 0.5, finale: 1.2 },

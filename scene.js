@@ -55,7 +55,7 @@ const bgMat = new THREE.ShaderMaterial({
       if(ar>1.0) uv.y=(uv.y-0.5)/ar+0.5; else uv.x=(uv.x-0.5)*ar+0.5; uv.x=1.0-uv.x;
       vec3 col=vec3(0.02,0.04,0.07);
       if(uHasTex>0.5){ vec3 c=texture2D(uTex,uv).rgb; float g=dot(c,vec3(0.299,0.587,0.114));
-        c=mix(vec3(g),c,0.22); c*=vec3(0.5,0.85,1.08); col=c*uDim; }
+        c=mix(vec3(g),c,0.24); c*=vec3(1.12,0.82,0.6); col=c*uDim; } // warm sunlit amber
       vec2 d=vUv-0.5; col*=mix(0.3,1.0,smoothstep(0.9,0.3,length(d)));
       gl_FragColor=vec4(col,1.0); }`,
   depthTest: false, depthWrite: false,
@@ -72,7 +72,7 @@ const coreMat = new THREE.ShaderMaterial({
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
   fragmentShader: `varying vec2 vUv; uniform float uTime,uHp,uFlash;
     void main(){ vec2 p=vUv*2.0-1.0; float r=length(p); if(r>1.0) discard;
-      vec3 good=mix(vec3(1.0,0.35,0.4), vec3(0.25,0.88,1.0), uHp);
+      vec3 good=mix(vec3(1.0,0.28,0.32), vec3(0.25,0.88,0.82), uHp); // teal eye -> red
       float coreGlow=smoothstep(0.42,0.0,r)*(0.8+0.3*sin(uTime*2.0));
       float ring=smoothstep(0.04,0.0,abs(r-0.92))*(0.6+0.4*sin(uTime*1.5));
       vec3 col=good*(coreGlow+ring) + vec3(1.0,0.2,0.25)*uFlash*smoothstep(1.0,0.0,r);
@@ -86,7 +86,7 @@ export function setCoreHealth(frac) { coreUniforms.uHp.value = frac; }
 export function flashCore() { coreUniforms.uFlash.value = 1; }
 
 /* ── sigil ───────────────────────────────────────────────────────────────*/
-export const sigilUniforms = { uTime: { value: 0 }, uOpen: { value: 0.15 }, uPulse: { value: 0 }, uIntensity: { value: 0.55 }, uCyan: { value: new THREE.Color(CFG.colors.cyan) }, uGold: { value: new THREE.Color(CFG.colors.gold) } };
+export const sigilUniforms = { uTime: { value: 0 }, uOpen: { value: 0.15 }, uPulse: { value: 0 }, uIntensity: { value: 0.55 }, uCyan: { value: new THREE.Color(CFG.colors.red) }, uGold: { value: new THREE.Color(CFG.colors.gold) } };
 const sigilMat = new THREE.ShaderMaterial({
   uniforms: sigilUniforms, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide,
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0); }`,
@@ -202,7 +202,7 @@ class Ribbon {
     this.mesh.geometry.attributes.position.needsUpdate = true; this.mesh.geometry.attributes.aAlpha.needsUpdate = true;
   }
 }
-export const ribbons = [new Ribbon(CFG.colors.cyan), new Ribbon(CFG.colors.gold)];
+export const ribbons = [new Ribbon(CFG.colors.eye), new Ribbon(CFG.colors.red)];
 
 /* ── rich hand cursors (open aura / fist strike) ─────────────────────────*/
 function makeHandCursor() {
@@ -220,15 +220,17 @@ export const handCursors = [makeHandCursor(), makeHandCursor()];
 export function poseHandCursor(i, o) {
   const hc = handCursors[i]; if (!o.present) { hc.grp.visible = false; return; }
   hc.grp.visible = true; hc.grp.position.set(o.x, o.y, 0.3); hc.grp.rotation.z += 0.02;
-  const cyan = CFG.colors.cyan, gold = CFG.colors.gold;
+  const eye = CFG.colors.eye, red = CFG.colors.red;
   if (o.fist) {
+    // closed fist = crimson strike core (tight, hot)
     const s = CFG.hands.fistRadius; hc.aura.scale.setScalar(s * 0.7); hc.fill.scale.setScalar(s * 0.7);
-    hc.dot.scale.setScalar(1.5); hc.auraMat.color.set(gold); hc.fillMat.color.set(gold); hc.dotMat.color.set(gold);
-    hc.auraMat.opacity = 0.85; hc.fillMat.opacity = 0.22; hc.dotMat.opacity = 1;
+    hc.dot.scale.setScalar(1.5); hc.auraMat.color.set(red); hc.fillMat.color.set(red); hc.dotMat.color.set(red);
+    hc.auraMat.opacity = 0.9; hc.fillMat.opacity = 0.24; hc.dotMat.opacity = 1;
   } else {
+    // open hand = teal eye-chi aura (wide sweep)
     const s = CFG.hands.openRadius; hc.aura.scale.setScalar(s); hc.fill.scale.setScalar(s);
-    hc.dot.scale.setScalar(0.8); hc.auraMat.color.set(cyan); hc.fillMat.color.set(cyan); hc.dotMat.color.set(cyan);
-    hc.auraMat.opacity = 0.4; hc.fillMat.opacity = 0.07; hc.dotMat.opacity = 0.8;
+    hc.dot.scale.setScalar(0.8); hc.auraMat.color.set(eye); hc.fillMat.color.set(eye); hc.dotMat.color.set(eye);
+    hc.auraMat.opacity = 0.42; hc.fillMat.opacity = 0.08; hc.dotMat.opacity = 0.85;
   }
 }
 

@@ -7,33 +7,56 @@
 <link rel="stylesheet" href="./style.css" />
 <!--
   EYE OF THE BLIND MONK — a webcam hand-tracking game themed on Lee Sin.
-  Your hands are chi weapons: OPEN HAND sweeps orbs away, CLOSED FIST shatters
-  them. Defend the core. Charge the dragon, slam both fists to unleash it.
-
+  OPEN HAND sweeps orbs away, CLOSED FIST shatters them, both fists = the dragon.
   Static site, no build step. Host the folder (GitHub Pages / Vercel) or open
-  over http://localhost. A webcam is required (https:// or localhost only).
-  Edit messages.js to change the personal text.
+  over http://localhost. Webcam required (https:// or localhost). Edit messages.js.
 -->
 </head>
 <body>
+
+<!-- reusable gold Ionian filigree ornament -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="filigree" viewBox="0 0 120 120">
+    <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M6 118 L6 44 Q6 16 34 10 L118 10" />
+      <path d="M6 66 Q30 64 34 42 Q37 26 24 25 Q13 25 16 37 Q19 46 31 41" />
+      <path d="M52 10 Q52 26 70 30" />
+    </g>
+    <circle cx="6" cy="10" r="4" fill="currentColor" />
+  </symbol>
+</svg>
 
 <div id="stage"></div>
 <video id="webcam" playsinline muted></video>
 <div id="damage-vignette"></div>
 
+<!-- decorative play frame: arm-wrap strips + gold corners -->
+<div id="frame">
+  <div class="edge top"></div>
+  <div class="edge bottom"></div>
+  <svg class="fil tl"><use href="#filigree" /></svg>
+  <svg class="fil tr"><use href="#filigree" /></svg>
+  <svg class="fil bl"><use href="#filigree" /></svg>
+  <svg class="fil br"><use href="#filigree" /></svg>
+</div>
+
 <!-- HUD -->
 <div id="hud">
   <div class="corner" id="hud-topleft">
-    <div class="score-label">Score</div>
-    <div class="score-value" id="score">0</div>
-    <div class="sub combo-wrap">Combo <span class="multiplier" id="combo">x1</span></div>
+    <div class="plaque">
+      <div class="score-label">Score</div>
+      <div class="score-value" id="score">0</div>
+      <div class="sub combo-wrap">Combo <span class="multiplier" id="combo">x1</span></div>
+    </div>
   </div>
 
   <div class="corner" id="hud-topright">
-    <div class="score-label">Wave</div>
-    <div class="wave-value" id="wave">1</div>
-    <div class="bar-label">Core</div>
-    <div class="bar"><div class="bar-fill hp" id="hp-fill"></div></div>
+    <div class="plaque">
+      <div class="score-label">Wave</div>
+      <div class="wave-value" id="wave">1</div>
+      <div class="bar-label">The Eye</div>
+      <div class="bar"><div class="bar-fill hp" id="hp-fill"></div></div>
+    </div>
   </div>
 
   <div id="coach"></div>
@@ -53,13 +76,20 @@
 
 <!-- Champion-select intro -->
 <div class="overlay" id="intro">
-  <div class="eyebrow">Ionia · The Blind Monk</div>
-  <div class="title">Eye of the <span class="accent">Blind Monk</span></div>
+  <div class="headband wrap-strip"><span class="gem"></span></div>
+  <svg class="fil tl"><use href="#filigree" /></svg>
+  <svg class="fil tr"><use href="#filigree" /></svg>
+  <svg class="fil bl"><use href="#filigree" /></svg>
+  <svg class="fil br"><use href="#filigree" /></svg>
+
+  <div class="eyebrow"><span class="gem"></span> Ionia · The Blind Monk <span class="gem"></span></div>
+  <div class="title"><span class="eye-word">Eye</span> of the <span class="accent">Blind Monk</span></div>
+  <div class="rope-div divider"></div>
   <div class="tagline">A duelist needs no eyes to see</div>
   <div class="desc">
     Your hands are your weapons. <b>Open hand</b> becomes a chi aura that sweeps orbs
-    away; <b>closed fist</b> becomes a strike that shatters them. Orbs rush your core —
-    hold them off, build your combo, and when the dragon is charged, bring
+    away; <b>closed fist</b> becomes a strike that shatters them. Orbs rush the Eye at
+    the center — hold them off, build your combo, and when the dragon is charged, bring
     <b>both fists together</b> to unleash Dragon's Rage.
   </div>
   <div class="row">
@@ -69,7 +99,7 @@
   <div class="audio-line">
     <label class="audio-pill" for="audio-file">♪ Load your own audio (optional)</label>
     <input type="file" id="audio-file" accept="audio/*" />
-    <div id="audio-status" style="margin-top:8px;color:#6f96a2;">No track loaded — reactive layer off</div>
+    <div id="audio-status" style="margin-top:8px;">No track loaded — reactive layer off</div>
   </div>
 </div>
 
@@ -84,7 +114,7 @@
 <button class="btn ghost" id="trial-skip" style="display:none;">Skip</button>
 
 <!-- Finale -->
-<div id="finale"><div id="finale-text"></div></div>
+<div id="finale"><span class="gem"></span><div id="finale-text"></div></div>
 
 <!-- Loader / CDN-failure fallback -->
 <div id="loader">

@@ -21,7 +21,7 @@ const el = {
   hud: $('hud'), score: $('score'), combo: $('combo'), wave: $('wave'),
   hpFill: $('hp-fill'), ultFill: $('ult-fill'), ultChip: $('chip-R'),
   coach: $('coach'), note: $('note'), fps: $('fps-hint'), vignette: $('damage-vignette'),
-  intro: $('intro'), trialPanel: $('trial-panel'), trialSkip: $('trial-skip'),
+  intro: $('intro'), trialPanel: $('trial-panel'), trialSkip: $('trial-skip'), frame: $('frame'),
   finale: $('finale'), finaleText: $('finale-text'),
 };
 const chips = { open: $('chip-open'), fist: $('chip-fist'), R: $('chip-R') };
@@ -110,7 +110,7 @@ function enterFinale() {
 /* ── mode flow ───────────────────────────────────────────────────────────*/
 let mode = 'intro';
 function startFreePlay() {
-  mode = 'play'; el.hud.classList.add('show'); SCENE.showCore(true);
+  mode = 'play'; el.hud.classList.add('show'); el.frame.classList.add('show'); SCENE.showCore(true);
   chips.open.classList.add('learned'); chips.fist.classList.add('learned');
   AB.unlockPlay(); AB.startWaves(); SCENE.seedAmbient();
   coach('Defend the core — orbs are coming', 3.2);
@@ -151,7 +151,7 @@ function loop() {
     if (st.present) {
       const w = SCENE.normToWorld(st.x, st.y);
       SCENE.poseHandCursor(i, { present: true, x: w.x, y: w.y, fist: st.fist, open: st.open });
-      rb.setColor(st.fist ? CFG.colors.gold : CFG.colors.cyan);
+      rb.setColor(st.fist ? CFG.colors.red : CFG.colors.eye);
       rb.push(w.x, w.y, clamp(-st.z * CFG.hands.depthScale, -2, 2));
     } else { SCENE.poseHandCursor(i, { present: false }); rb.clear(); }
     rb.update(time, beat);
