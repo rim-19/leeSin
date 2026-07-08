@@ -3,113 +3,31 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Summoner's Rift · Lee Sin</title>
+<title>Chi Sculptor · Lee Sin</title>
 <link rel="stylesheet" href="./style.css" />
-<!--
-  A cinematic League-of-Legends-style experience for Lee Sin, with webcam
-  hand-tracking. Static site, no build step. Host the folder or open on
-  http://localhost (webcam needs https:// or localhost).
-
-  OPTIONAL ART (drop these in an /assets folder to upgrade the visuals):
-    assets/leesin.png  — Lee Sin splash (shown in the hero; falls back to a glow)
-    assets/photo.jpg   — the polaroid photo in the love card
-  Edit all text in messages.js.
--->
+<!-- Sculpt a field of chi with your bare hand. Webcam required (https / localhost).
+     Static site, no build step. Edit the closing line in messages.js. -->
 </head>
 <body>
 
 <div id="stage"></div>
 <video id="webcam" playsinline muted></video>
-
-<!-- fullscreen impact flash + cinematic black -->
 <div id="flash"></div>
-<div id="cine"><div id="opening-line"></div></div>
-<div id="spirit"><span id="spirit-line"></span></div>
 
-<!-- ══ LANDING SITE ══ -->
-<div id="site">
-  <!-- nav -->
-  <nav id="nav">
-    <div class="brand"><span class="brand-lol">LEAGUE<span class="of">OF</span>LEGENDS</span></div>
-    <div class="nav-links"><a>HOME</a><a>CHAMPION</a><a>RUNES</a><a>MEMORIES</a><a>MESSAGE</a></div>
-    <div class="nav-summoner"><div class="ns-label">SUMMONER</div><div class="ns-name" id="nav-summoner">My Love</div><div class="ns-emblem">❦</div></div>
-  </nav>
+<div id="title"></div>
+<div id="hint"></div>
+<div id="closing"></div>
 
-  <!-- hero -->
-  <section class="hero">
-    <img id="splash" src="assets/leesin.png" alt="" onerror="this.style.display='none';document.getElementById('splash-fallback').style.display='block';" />
-    <div id="splash-fallback"></div>
-
-    <div class="hero-left">
-      <div class="welcome">WELCOME,<br><span class="welcome-name" id="welcome-name">SUMMONER</span></div>
-      <div class="hr"></div>
-      <div class="summoned-label">YOU HAVE SUMMONED</div>
-      <div class="champ-name">LEE SIN</div>
-      <div class="champ-title">THE BLIND MONK</div>
-      <blockquote class="quote"><span class="q-mark">“</span><span id="quote-text"></span><cite id="quote-author"></cite></blockquote>
-    </div>
-
-    <aside class="control-panel">
-      <div class="cp-title">USE YOUR HAND<br>TO CONTROL</div>
-      <div class="cp-row" id="row-move"><span class="cp-ico">🖐</span><div><b>MOVE HAND</b><span>Move Lee Sin</span></div></div>
-      <div class="cp-row" id="row-pinch"><span class="cp-ico">🤏</span><div><b>PINCH</b><span>Sonic Wave</span></div></div>
-      <div class="cp-row" id="row-fist"><span class="cp-ico">✊</span><div><b>FIST</b><span>Resonating Strike</span></div></div>
-      <div class="cp-row" id="row-open"><span class="cp-ico">✋</span><div><b>OPEN PALM</b><span>Safeguard / Kick</span></div></div>
-    </aside>
-
-    <div class="radar">
-      <div class="radar-ring"><div class="radar-ring r2"></div><div class="radar-ring r3"></div><span class="radar-hand">✋</span></div>
-      <div class="radar-title">SHOW YOUR MOVES</div>
-      <div class="radar-status" id="track-status">Tracking your hand…</div>
-    </div>
-  </section>
-
-  <!-- abilities -->
-  <section class="abilities-panel">
-    <div class="ap-title">LEE SIN ABILITIES</div>
-    <div class="ap-grid">
-      <div class="ap-item"><div class="ap-ico q" id="ico-Q"><span class="ap-key">Q</span></div><div class="ap-name">SONIC WAVE</div><div class="ap-desc">Send a soundwave to reveal your path.</div></div>
-      <div class="ap-item"><div class="ap-ico w" id="ico-W"><span class="ap-key">W</span></div><div class="ap-name">RESONATING STRIKE</div><div class="ap-desc">Dash, strike, and deal devastating damage.</div></div>
-      <div class="ap-item"><div class="ap-ico e" id="ico-E"><span class="ap-key">E</span></div><div class="ap-name">SAFEGUARD</div><div class="ap-desc">Shield yourself and your allies.</div></div>
-      <div class="ap-item"><div class="ap-ico r" id="ico-R"><span class="ap-key">R</span></div><div class="ap-name">DRAGON'S RAGE</div><div class="ap-desc">Kick the enemy champion with unstoppable force.</div></div>
-    </div>
-  </section>
-
-  <!-- love card -->
-  <section class="love-card">
-    <div class="love-heart">
-      <svg viewBox="0 0 100 100"><defs><radialGradient id="hg" cx="40%" cy="35%"><stop offset="0%" stop-color="#ffd1ec"/><stop offset="45%" stop-color="#ff4d8d"/><stop offset="100%" stop-color="#7a1746"/></radialGradient></defs>
-        <path d="M50 86 C10 58 12 26 34 22 C44 20 50 30 50 34 C50 30 56 20 66 22 C88 26 90 58 50 86 Z" fill="url(#hg)" stroke="#ff9ec7" stroke-width="1.5"/></svg>
-    </div>
-    <div class="love-text">
-      <div class="love-title" id="love-title"></div>
-      <div class="love-body" id="love-body"></div>
-      <div class="love-sign"><span class="ls-heart">♥</span> <span id="love-sign"></span></div>
-    </div>
-    <div class="polaroid">
-      <img src="assets/photo.jpg" alt="" onerror="this.parentElement.classList.add('empty');this.style.display='none';" />
-      <div class="polaroid-empty">☾ our photo<br><small>drop assets/photo.jpg</small></div>
-    </div>
-  </section>
-
-  <!-- enter -->
-  <div class="enter-wrap"><button class="enter-btn" id="enter-btn">ENTER SUMMONER'S RIFT</button></div>
-</div>
-
-<!-- finale -->
-<div id="finale"></div>
-
-<!-- loader / begin gate -->
 <div id="loader">
   <div class="spinner" id="spinner"></div>
   <div class="lmsg">The blind monk awaits</div>
   <button class="begin-btn" id="begin-btn">BEGIN</button>
-  <div class="begin-hint">enable your webcam &amp; sound when asked</div>
+  <div class="begin-hint">allow your webcam &amp; sound when asked</div>
   <div id="fallback">
     <h2>A resource could not be loaded</h2>
-    <p>This experience pulls Three.js, MediaPipe Hands and GSAP from a CDN. If a
-      sandbox blocks outside requests it won't load — download this folder and open
-      it in Chrome/Edge, or host it (GitHub Pages / Vercel).</p>
+    <p>This pulls Three.js and MediaPipe Hands from a CDN. If a sandbox blocks
+      outside requests it won't load — download the folder and open it in
+      Chrome/Edge, or host it (GitHub Pages / Vercel).</p>
     <p class="err" id="fallback-err"></p>
   </div>
 </div>
@@ -125,7 +43,6 @@
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" onerror="window.__eyeFail('MediaPipe Hands')"></script>
-<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" onerror="window.__eyeFail('GSAP')"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
