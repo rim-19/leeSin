@@ -2,153 +2,134 @@
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
-<title>Eye of the Blind Monk</title>
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Summoner's Rift · Lee Sin</title>
 <link rel="stylesheet" href="./style.css" />
 <!--
-  EYE OF THE BLIND MONK — a webcam hand-tracking game themed on Lee Sin.
-  OPEN HAND sweeps orbs away, CLOSED FIST shatters them, both fists = the dragon.
-  Static site, no build step. Host the folder (GitHub Pages / Vercel) or open
-  over http://localhost. Webcam required (https:// or localhost). Edit messages.js.
+  A cinematic League-of-Legends-style experience for Lee Sin, with webcam
+  hand-tracking. Static site, no build step. Host the folder or open on
+  http://localhost (webcam needs https:// or localhost).
+
+  OPTIONAL ART (drop these in an /assets folder to upgrade the visuals):
+    assets/leesin.png  — Lee Sin splash (shown in the hero; falls back to a glow)
+    assets/photo.jpg   — the polaroid photo in the love card
+  Edit all text in messages.js.
 -->
 </head>
 <body>
 
-<!-- reusable gold Ionian filigree ornament -->
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="filigree" viewBox="0 0 120 120">
-    <g fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M6 118 L6 44 Q6 16 34 10 L118 10" />
-      <path d="M6 66 Q30 64 34 42 Q37 26 24 25 Q13 25 16 37 Q19 46 31 41" />
-      <path d="M52 10 Q52 26 70 30" />
-    </g>
-    <circle cx="6" cy="10" r="4" fill="currentColor" />
-  </symbol>
-</svg>
-
 <div id="stage"></div>
 <video id="webcam" playsinline muted></video>
-<div id="damage-vignette"></div>
 
-<!-- decorative play frame: arm-wrap strips + gold corners -->
-<div id="frame">
-  <div class="edge top"></div>
-  <div class="edge bottom"></div>
-  <svg class="fil tl"><use href="#filigree" /></svg>
-  <svg class="fil tr"><use href="#filigree" /></svg>
-  <svg class="fil bl"><use href="#filigree" /></svg>
-  <svg class="fil br"><use href="#filigree" /></svg>
-</div>
+<!-- fullscreen impact flash + cinematic black -->
+<div id="flash"></div>
+<div id="cine"><div id="opening-line"></div></div>
+<div id="spirit"><span id="spirit-line"></span></div>
 
-<!-- HUD -->
-<div id="hud">
-  <div class="corner" id="hud-topleft">
-    <div class="plaque">
-      <div class="score-label">Score</div>
-      <div class="score-value" id="score">0</div>
-      <div class="sub combo-wrap">Combo <span id="combo">0</span> · <span class="multiplier" id="mult">x1</span></div>
+<!-- ══ LANDING SITE ══ -->
+<div id="site">
+  <!-- nav -->
+  <nav id="nav">
+    <div class="brand"><span class="brand-lol">LEAGUE<span class="of">OF</span>LEGENDS</span></div>
+    <div class="nav-links"><a>HOME</a><a>CHAMPION</a><a>RUNES</a><a>MEMORIES</a><a>MESSAGE</a></div>
+    <div class="nav-summoner"><div class="ns-label">SUMMONER</div><div class="ns-name" id="nav-summoner">My Love</div><div class="ns-emblem">❦</div></div>
+  </nav>
+
+  <!-- hero -->
+  <section class="hero">
+    <img id="splash" src="assets/leesin.png" alt="" onerror="this.style.display='none';document.getElementById('splash-fallback').style.display='block';" />
+    <div id="splash-fallback"></div>
+
+    <div class="hero-left">
+      <div class="welcome">WELCOME,<br><span class="welcome-name" id="welcome-name">SUMMONER</span></div>
+      <div class="hr"></div>
+      <div class="summoned-label">YOU HAVE SUMMONED</div>
+      <div class="champ-name">LEE SIN</div>
+      <div class="champ-title">THE BLIND MONK</div>
+      <blockquote class="quote"><span class="q-mark">“</span><span id="quote-text"></span><cite id="quote-author"></cite></blockquote>
     </div>
-  </div>
 
-  <div class="corner" id="hud-topright">
-    <div class="plaque">
-      <div class="score-label">Accuracy</div>
-      <div class="wave-value" id="acc">100%</div>
-      <div class="bar-label">Song</div>
-      <div class="bar"><div class="bar-fill song" id="prog-fill"></div></div>
+    <aside class="control-panel">
+      <div class="cp-title">USE YOUR HAND<br>TO CONTROL</div>
+      <div class="cp-row" id="row-move"><span class="cp-ico">🖐</span><div><b>MOVE HAND</b><span>Move Lee Sin</span></div></div>
+      <div class="cp-row" id="row-pinch"><span class="cp-ico">🤏</span><div><b>PINCH</b><span>Sonic Wave</span></div></div>
+      <div class="cp-row" id="row-fist"><span class="cp-ico">✊</span><div><b>FIST</b><span>Resonating Strike</span></div></div>
+      <div class="cp-row" id="row-open"><span class="cp-ico">✋</span><div><b>OPEN PALM</b><span>Safeguard / Kick</span></div></div>
+    </aside>
+
+    <div class="radar">
+      <div class="radar-ring"><div class="radar-ring r2"></div><div class="radar-ring r3"></div><span class="radar-hand">✋</span></div>
+      <div class="radar-title">SHOW YOUR MOVES</div>
+      <div class="radar-status" id="track-status">Tracking your hand…</div>
     </div>
-  </div>
+  </section>
 
-  <div id="judge"></div>
-  <div id="coach"></div>
-  <div id="note"></div>
+  <!-- abilities -->
+  <section class="abilities-panel">
+    <div class="ap-title">LEE SIN ABILITIES</div>
+    <div class="ap-grid">
+      <div class="ap-item"><div class="ap-ico q" id="ico-Q"><span class="ap-key">Q</span></div><div class="ap-name">SONIC WAVE</div><div class="ap-desc">Send a soundwave to reveal your path.</div></div>
+      <div class="ap-item"><div class="ap-ico w" id="ico-W"><span class="ap-key">W</span></div><div class="ap-name">RESONATING STRIKE</div><div class="ap-desc">Dash, strike, and deal devastating damage.</div></div>
+      <div class="ap-item"><div class="ap-ico e" id="ico-E"><span class="ap-key">E</span></div><div class="ap-name">SAFEGUARD</div><div class="ap-desc">Shield yourself and your allies.</div></div>
+      <div class="ap-item"><div class="ap-ico r" id="ico-R"><span class="ap-key">R</span></div><div class="ap-name">DRAGON'S RAGE</div><div class="ap-desc">Kick the enemy champion with unstoppable force.</div></div>
+    </div>
+  </section>
 
-  <div id="abilities">
-    <div class="ability catch" id="chip-open"><span class="glyph">✋</span><span class="name">Catch · Blue</span></div>
-    <div class="ability strike" id="chip-fist"><span class="glyph">✊</span><span class="name">Strike · Red</span></div>
-  </div>
+  <!-- love card -->
+  <section class="love-card">
+    <div class="love-heart">
+      <svg viewBox="0 0 100 100"><defs><radialGradient id="hg" cx="40%" cy="35%"><stop offset="0%" stop-color="#ffd1ec"/><stop offset="45%" stop-color="#ff4d8d"/><stop offset="100%" stop-color="#7a1746"/></radialGradient></defs>
+        <path d="M50 86 C10 58 12 26 34 22 C44 20 50 30 50 34 C50 30 56 20 66 22 C88 26 90 58 50 86 Z" fill="url(#hg)" stroke="#ff9ec7" stroke-width="1.5"/></svg>
+    </div>
+    <div class="love-text">
+      <div class="love-title" id="love-title"></div>
+      <div class="love-body" id="love-body"></div>
+      <div class="love-sign"><span class="ls-heart">♥</span> <span id="love-sign"></span></div>
+    </div>
+    <div class="polaroid">
+      <img src="assets/photo.jpg" alt="" onerror="this.parentElement.classList.add('empty');this.style.display='none';" />
+      <div class="polaroid-empty">☾ our photo<br><small>drop assets/photo.jpg</small></div>
+    </div>
+  </section>
+
+  <!-- enter -->
+  <div class="enter-wrap"><button class="enter-btn" id="enter-btn">ENTER SUMMONER'S RIFT</button></div>
 </div>
 
-<div class="hint" id="fps-hint"></div>
+<!-- finale -->
+<div id="finale"></div>
 
-<!-- Champion-select intro -->
-<div class="overlay" id="intro">
-  <div class="headband wrap-strip"><span class="gem"></span></div>
-  <svg class="fil tl"><use href="#filigree" /></svg>
-  <svg class="fil tr"><use href="#filigree" /></svg>
-  <svg class="fil bl"><use href="#filigree" /></svg>
-  <svg class="fil br"><use href="#filigree" /></svg>
-
-  <div class="eyebrow"><span class="gem"></span> Ionia · The Blind Monk <span class="gem"></span></div>
-  <div class="title"><span class="eye-word">Eye</span> of the <span class="accent">Blind Monk</span></div>
-  <div class="rope-div divider"></div>
-  <div class="tagline">A duelist needs no eyes to see</div>
-  <div class="desc">
-    A rhythm of chi. Notes flow to the ring in time with the music — <b>catch the blue</b>
-    ones with an <b>open palm</b>, <b>strike the red</b> ones with a <b>fist</b>. Nail the timing,
-    keep the combo alive, and let the song carry you to the end.
-    <br /><span style="color:var(--gold);font-size:13px;letter-spacing:0.1em;">Load your own track below for a chart mapped to its beats — or play the steady fallback tempo.</span>
-  </div>
-  <div class="row">
-    <button class="btn" id="btn-begin">Lock In</button>
-    <button class="btn ghost" id="btn-skip-trial">Skip Teach</button>
-  </div>
-  <div class="audio-line">
-    <label class="audio-pill" for="audio-file">♪ Load your own audio (optional)</label>
-    <input type="file" id="audio-file" accept="audio/*" />
-    <div id="audio-status" style="margin-top:8px;">No track loaded — reactive layer off</div>
-  </div>
-</div>
-
-<!-- Short teach -->
-<div id="trial-panel">
-  <div id="trial-step">Learn 1 / 2</div>
-  <div id="trial-name">Sweep</div>
-  <div id="trial-desc"></div>
-  <div id="trial-status">Try it…</div>
-  <div class="trial-progress" id="trial-pips"></div>
-</div>
-<button class="btn ghost" id="trial-skip" style="display:none;">Skip</button>
-
-<!-- Finale -->
-<div id="finale"><span class="gem"></span><div id="finale-text"></div></div>
-
-<!-- Loader / CDN-failure fallback -->
+<!-- loader / begin gate -->
 <div id="loader">
   <div class="spinner" id="spinner"></div>
-  <div class="lmsg" id="lmsg">Awakening the temple…</div>
+  <div class="lmsg">The blind monk awaits</div>
+  <button class="begin-btn" id="begin-btn">BEGIN</button>
+  <div class="begin-hint">enable your webcam &amp; sound when asked</div>
   <div id="fallback">
     <h2>A resource could not be loaded</h2>
-    <p>This game pulls Three.js and MediaPipe Hands from a CDN. Something —
-      usually a sandboxed preview that blocks outside network requests — stopped one
-      of them from loading.</p>
-    <p><b>Fix:</b> download this folder and open it in Chrome or Edge on your own
-      machine. For camera access, serve it over localhost:</p>
-    <p><code>python -m http.server 8000</code> &nbsp;→&nbsp; <code>http://localhost:8000</code></p>
-    <p>Or host the folder on any static host (GitHub Pages, Vercel) and open the URL.</p>
+    <p>This experience pulls Three.js, MediaPipe Hands and GSAP from a CDN. If a
+      sandbox blocks outside requests it won't load — download this folder and open
+      it in Chrome/Edge, or host it (GitHub Pages / Vercel).</p>
     <p class="err" id="fallback-err"></p>
   </div>
 </div>
 
-<!-- ══ CDN-failure watchdog ══ -->
 <script>
   window.__eyeFail = function (what) {
-    var s = document.getElementById('spinner'), m = document.getElementById('lmsg');
-    var fb = document.getElementById('fallback'), er = document.getElementById('fallback-err');
-    document.getElementById('loader').style.display = 'flex';
-    if (s) s.style.display = 'none'; if (m) m.style.display = 'none';
-    if (fb) fb.style.display = 'block'; if (er && what) er.textContent = 'Failed: ' + what;
+    var l = document.getElementById('loader'); if (l) l.style.display = 'flex';
+    var sp = document.getElementById('spinner'), fb = document.getElementById('fallback'), er = document.getElementById('fallback-err');
+    if (sp) sp.style.display = 'none'; if (fb) fb.style.display = 'block'; if (er && what) er.textContent = 'Failed: ' + what;
     window.__eyeFailed = true;
   };
-  setTimeout(function () { if (!window.__eyeStarted && !window.__eyeFailed) window.__eyeFail('libraries did not load in time (network blocked?)'); }, 6000);
+  setTimeout(function () { if (!window.__eyeStarted && !window.__eyeFailed) window.__eyeFail('libraries did not load (network blocked?)'); }, 7000);
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" onerror="window.__eyeFail('MediaPipe Hands')"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" onerror="window.__eyeFail('GSAP')"></script>
 <script type="importmap">
 { "imports": {
-    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
 } }
 </script>
 <script type="module" src="./main.js"></script>

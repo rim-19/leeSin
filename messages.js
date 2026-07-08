@@ -1,39 +1,47 @@
 /* ============================================================================
  *  messages.js  —  THE ONLY FILE WITH PROSE.  Edit these freely.
  * ----------------------------------------------------------------------------
- *  This is the one place personal text lives, so it's easy to find later.
- *
- *    midGameNotes   — short lines that drift in near a HUD edge during play,
- *                     every 30–45 seconds (timing set in config.js). Add or
- *                     remove lines freely; the array can be any length >= 1.
- *
- *    milestoneNotes — lines tied to specific moments. If a key is missing,
- *                     a random line from midGameNotes is shown instead.
- *                     Recognized keys: firstUltimate, comboX5, waveCleared.
- *
- *    finaleLetter   — the single longer message shown center-screen in the
- *                     calm finale, once per session. Line breaks are kept.
+ *  All the words shown in the experience live here so they're easy to change.
  * ==========================================================================*/
 
+// Top-right of the nav bar ("SUMMONER  ___") and the hero greeting.
+export const summonerName = "My Love";
+export const welcomeName  = "SUMMONER";
+
+// Cinematic opening + hand-tracking prompt.
+export const openingLine = "The blind monk sees what others cannot.";
+export const spiritLine  = "Show me your spirit.";
+
+// Champion quote in the hero.
+export const heroQuote = {
+  text: "I do not fear the enemy.\nI fear the calm before their eyes.",
+  author: "Lee Sin",
+};
+
+// The love card (bottom of the page). Swap for your own words.
+export const loveCard = {
+  title: "TO MY FAVORITE SUMMONER",
+  body:
+    "Thank you for being my greatest support, my strongest teammate, and my " +
+    "favorite person. You make every day feel like a victory.",
+  sign: "I LOVE YOU",
+};
+
+// The final scene — lines fade in one after another, then it fades to black.
+export const finaleSequence = [
+  "Every champion needs a worthy teammate.",
+  "Thank you for always being my MVP.",
+];
+
+// ── Optional legacy lines (kept so they're easy to reuse) ────────────────
 export const midGameNotes = [
   "You don't need eyes to find me — just chi.",
   "Every wave you cast, I'm rooting for you.",
-  "Careful. I fall for guys who land skill shots.",
   "This is my heart. Try not to break it like the orbs.",
-  "Ping me if you ever feel lost, I'll find you.",
-  "You're doing better than most Diamond junglers, sweet daddy.",
-  "No blindfold needed, I already see how good you are.",
 ];
-
-export const milestoneNotes = {
-  firstUltimate: "That kick had more power than my feelings for you. Almost.",
-  comboX5: "Combo x5! That's how many times a day I think about you devouring me , times a lot more.",
-  waveCleared: "You cleared the wave. I still haven't cleared how much I like you.",
-};
-
 export const finaleLetter = `
 good boy ! You made it here, through every wave, every strike, every quiet second
-between them. sawbt lik had little game bch t3rf bli knbgheeeek and i do care a lot about you and your interests, big kisses sweet lover.
+between them. big kisses sweet lover.
 
 LOVE YOU 9ED SMAAAAA
 `;

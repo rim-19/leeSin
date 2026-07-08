@@ -1,12 +1,9 @@
 /* ============================================================================
- *  gestures.js  —  MediaPipe Hands wiring, reduced to what direct play needs:
- *  robust presence, a smoothed palm position (fluid between tracking frames),
- *  and a stable open/fist state with hysteresis. No finicky discrete-gesture
- *  recognition — the hands ARE the weapons, so the only "state" is open vs fist.
- *
- *  Exposes handState[i] = { present, x, y, z (smoothed normalized+depth),
- *  open, fist, openAmount, justClosed }, plus analyzeHands() (call every render
- *  frame — it does the smoothing) and bothFistsTogether() for the ultimate.
+ *  gestures.js  —  MediaPipe Hands: smoothed cursor + pinch / fist / open palm.
+ *    pinch  → Sonic Wave (Q)      fist → Resonating Strike (Q2)
+ *    open   → Dragon's Rage (R)
+ *  handState[i] = { present, x,y,z (smoothed normalized), open, fist,
+ *                   pinch, pinchAmt, justPinched, openAmount }
  * ==========================================================================*/
 import { CFG } from './config.js';
 
@@ -21,29 +18,23 @@ function fingerExtended(lm, f) {
 }
 function extendedCount(lm) { let n = 0; for (let f = 0; f < 5; f++) if (fingerExtended(lm, f)) n++; return n; }
 function palmCenter(lm) { return { x: (lm[0].x + lm[9].x) / 2, y: (lm[0].y + lm[9].y) / 2, z: (lm[0].z + lm[9].z) / 2 }; }
+// palm size, to normalize pinch distance across depth
+function palmSpan(lm) { return dist2(lm[0], lm[9]) || 0.001; }
 
 function fresh() {
-  return {
-    present: false, x: 0.5, y: 0.5, z: 0, init: false,
-    open: true, fist: false, openAmount: 1, justClosed: false,
-  };
+  return { present: false, x: 0.5, y: 0.5, z: 0, init: false, open: true, fist: false, pinch: false, pinchAmt: 0, justPinched: false, openAmount: 1 };
 }
 export const handState = [fresh(), fresh()];
 
-/* ── MediaPipe wiring (lite model, throttled off the render loop) ─────────*/
 let handsData = [], hands = null, mpBusy = false, videoEl = null, lastSend = 0;
 
 export function initHands(video) {
   videoEl = video;
   hands = new window.Hands({ locateFile: (f) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/${f}` });
-  hands.setOptions({
-    maxNumHands: CFG.mediapipe.maxNumHands, modelComplexity: CFG.perf.modelComplexity,
-    minDetectionConfidence: CFG.mediapipe.minDetection, minTrackingConfidence: CFG.mediapipe.minTracking,
-  });
+  hands.setOptions({ maxNumHands: CFG.mediapipe.maxNumHands, modelComplexity: CFG.perf.modelComplexity, minDetectionConfidence: CFG.mediapipe.minDetection, minTrackingConfidence: CFG.mediapipe.minTracking });
   hands.onResults((res) => {
     const out = [];
-    if (res.multiHandLandmarks) for (const raw of res.multiHandLandmarks)
-      out.push({ lm: raw.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) }); // mirror X (selfie)
+    if (res.multiHandLandmarks) for (const raw of res.multiHandLandmarks) out.push({ lm: raw.map((p) => ({ x: 1 - p.x, y: p.y, z: p.z })) });
     handsData = out;
   });
 }
@@ -55,7 +46,7 @@ export function pumpHands() {
     const t = performance.now();
     if (videoEl && hands && !mpBusy && videoEl.readyState >= 2 && (t - lastSend) >= minGap) {
       mpBusy = true; lastSend = t;
-      try { await hands.send({ image: videoEl }); } catch (e) { /* transient */ }
+      try { await hands.send({ image: videoEl }); } catch (e) {}
       mpBusy = false;
     }
     requestAnimationFrame(tick);
@@ -63,10 +54,7 @@ export function pumpHands() {
   tick();
 }
 
-/* ── per-frame: match tracked hands to slots, smooth, resolve open/fist ───*/
 export function analyzeHands() {
-  // Greedy slot assignment by nearest previous position, so a hand keeps its
-  // color/trail instead of swapping when MediaPipe reorders detections.
   const used = [false, false];
   for (let i = 0; i < 2; i++) {
     const st = handState[i];
@@ -77,22 +65,29 @@ export function analyzeHands() {
       const d = st.init ? dist2(p, st) : Math.abs(k - i) * 0.001;
       if (d < bd) { bd = d; best = k; }
     }
-    if (best < 0) { st.present = false; st.justClosed = false; continue; }
+    if (best < 0) { st.present = false; st.justPinched = false; continue; }
     used[best] = true;
-    const lm = handsData[best].lm, p = palmCenter(lm);
-    const s = H.smoothing;
+    const lm = handsData[best].lm, p = palmCenter(lm), s = H.smoothing;
     if (!st.init) { st.x = p.x; st.y = p.y; st.z = p.z; st.init = true; }
     st.x += (p.x - st.x) * s; st.y += (p.y - st.y) * s; st.z += (p.z - st.z) * s;
     st.present = true; st.lm = lm;
+
+    // pose
     const amt = extendedCount(lm) / 5;
     st.openAmount += (amt - st.openAmount) * 0.5;
-    const wasFist = st.fist;
     if (st.openAmount > H.openThresh) { st.open = true; st.fist = false; }
     else if (st.openAmount < H.fistThresh) { st.open = false; st.fist = true; }
-    st.justClosed = st.fist && !wasFist;
+
+    // pinch (thumb–index) normalized by palm span
+    const pd = dist2(lm[4], lm[8]) / palmSpan(lm);
+    st.pinchAmt = pd;
+    const wasPinch = st.pinch;
+    if (!st.pinch && pd < H.pinchOn) st.pinch = true;
+    else if (st.pinch && pd > H.pinchOff) st.pinch = false;
+    st.justPinched = st.pinch && !wasPinch;
   }
 }
 
-/* ── trial detectors (short teach: hold open, then make a fist) ───────────*/
-export function anyHandOpen() { return handState.some((s) => s.present && s.open); }
-export function anyHandFist() { return handState.some((s) => s.present && s.fist); }
+export function anyOpen() { return handState.some((s) => s.present && s.open); }
+export function anyFist() { return handState.some((s) => s.present && s.fist); }
+export function anyPinch() { return handState.some((s) => s.present && s.pinch); }

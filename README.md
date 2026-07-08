@@ -1,78 +1,65 @@
-# Eye of the Blind Monk
+# Eye of the Blind Monk — a cinematic Lee Sin experience
 
-A webcam hand-tracking **rhythm game** themed on League of Legends' **Lee Sin**.
-The game reads your hands through your webcam (MediaPipe Hands) and turns them
-into chi, rendered in Three.js with real bloom, custom shaders, and GPU particles.
+A cinematic, League-of-Legends-style interactive web experience for **Lee Sin**,
+with webcam **hand-tracking**. Rendered in Three.js with a procedural Ionia-temple
+atmosphere (godray light shafts, drifting embers, fog, bloom, motion-blur), GSAP
+cinematics, and synthesized ambient audio.
 
-## How to play
+## The experience
 
-A **webcam is required**, and browsers only grant camera access over `https://`
-or `http://localhost`.
-
-Chi-orbs flow inward to a ring at the center in time with the music:
-
-- **Blue note → OPEN PALM** (catch) as it lands on the ring
-- **Red note → FIST** (strike) as it lands on the ring
-
-Nail the timing for **Perfect / Good**; miss the window and your **combo** breaks.
-Combo drives a score multiplier, streaks reveal the personal messages, and the
-song ending blooms into the finale letter. A short teach shows the two hand
-states before play.
-
-**Load your own audio** on the intro screen and the game decodes it and runs
-offline onset detection to build a note-chart mapped to *that track's* beats.
-No track loaded → a steady fallback tempo so it still plays. The file stays on
-your machine — nothing is uploaded.
+1. **Opening** — black screen → *"The blind monk sees what others cannot."* → the
+   temple reveals itself → a kick-impact shockwave with dust, camera shake and a boom.
+2. **Interactive** — your webcam tracks your hand and drives Lee Sin's chi:
+   - **Move hand** → the chi cursor follows you
+   - **Pinch** → Sonic Wave (Q) — blue projectile + shockwave
+   - **Fist** → Resonating Strike — dash streak + motion blur
+   - **Clench then open your palm** → Dragon's Rage (R) — energy burst + shake + flash
+3. **Finale** — press **Enter Summoner's Rift**: the scene calms, lanterns glow, and
+   *"Every champion needs a worthy teammate."* → *"Thank you for always being my MVP."*
+   fade in before it fades to black.
 
 ## Run it
 
-- **Hosted (recommended):** drop this folder on any static host — GitHub Pages,
-  Vercel, Netlify — and open the URL. No build step; all paths are relative.
-- **Locally:**
-  ```
-  python -m http.server 8000      →  http://localhost:8000
-  ```
+A **webcam is required** (browsers only allow camera on `https://` or `localhost`).
+Static site, no build step.
 
-If a CDN is blocked (some sandboxed previews do this), the page shows a message
-explaining how to run it in a real browser.
+- **Hosted:** drop the folder on GitHub Pages / Vercel / Netlify and open the URL.
+- **Locally:** `python -m http.server 8000` → `http://localhost:8000`
 
-## Editing the personal text
+Click **BEGIN** to grant camera + sound (browsers require a click before audio/webcam).
 
-All prose lives in **`messages.js`** — the only file with words to change:
+## Make it yours
 
-- `midGameNotes` — short lines that fade in during play
-- `milestoneNotes` — lines tied to moments (first ultimate, combo x5, wave cleared)
-- `finaleLetter` — the closing message shown in the calm finale
+- **Text** — everything is in **`messages.js`**: the summoner name, the hero quote,
+  the love card, and the two finale lines.
+- **Art (optional)** — drop into `assets/`:
+  - `assets/leesin.png` — Lee Sin splash for the hero (a glow shows without it)
+  - `assets/photo.jpg` — the photo in the polaroid on the love card
+- **Feel** — `config.js` holds palette, gesture thresholds, cooldowns, and the
+  cinematic timings.
 
-> Note: whatever you host is public — anyone with the URL can read `messages.js`.
+> **Note:** what you host is public — anyone with the URL can read `messages.js`.
 
-Gameplay feel lives in **`config.js`** — if timing feels too strict, widen
-`rhythm.perfectWindow` / `rhythm.goodWindow`; if the chart is too dense or too
-sparse, tune `analysis.sensitivity` and `rhythm.minGap`.
+## Honest scope
 
-## Audio-reactive layer
-
-Loading a track does two things: (1) offline **onset detection** builds the
-note-chart from the song's beats, and (2) a live Web Audio `AnalyserNode` drives
-bloom intensity and sigil/particle pulses off the music while you play. Nothing
-is fetched or embedded — the file never leaves your machine.
+I can't embed Riot's official Lee Sin art or a rigged 3D model, so **Lee Sin is
+shown via the splash image you provide** (with an energy-glow fallback), and the
+"kick / bow" beats are cinematic light-and-dust moments rather than a puppeteered
+character. Everything else — atmosphere, UI, hand-driven ability VFX, the opening
+and finale — is real and self-contained.
 
 ## Files
 
 ```
-index.html    page + CDN loading + fallback watchdog
-style.css     HUD / intro / teach / finale styling
-config.js     tunable timing windows, chart sensitivity, difficulty
-messages.js   ← editable personal text (prose lives only here)
-scene.js      Three.js setup, shaders, bloom, particles, hand cursors, hit-ring
-gestures.js   MediaPipe hand tracking + smoothing + open/fist state
-abilities.js  Chi Rhythm engine: notes, timing judgment, combo/score
-audio.js      Web Audio: decode + offline onset detection + playback clock
-main.js       game loop, HUD, teach, finale, orchestration
+index.html    the League-style landing page + cinematic overlays + CDN loads
+style.css     premium League styling (gold / pink / temple)
+config.js     palette, gesture thresholds, cooldowns, cinematic timings
+messages.js   ← editable text (prose lives only here)
+scene.js      Three.js: temple atmosphere, VFX, bloom + motion-blur, camera
+gestures.js   MediaPipe hand tracking: cursor + pinch / fist / open palm
+abilities.js  maps gestures → ability VFX (Sonic Wave / dash / Dragon's Rage)
+audio.js      synthesized ambient drone + wind + impact boom (Web Audio)
+main.js       cinematic sequence (GSAP), UI wiring, render loop
 ```
 
-CDN libraries: Three.js `0.160.0`, MediaPipe Hands `0.4.x`.
-
-Performance: bloom renders at half resolution, hand tracking uses the lite model
-throttled off the render thread, and hand positions are smoothed each frame — so
-it stays fluid even though tracking runs at ~30fps.
+CDN libraries: Three.js `0.160.0`, MediaPipe Hands `0.4.x`, GSAP `3.12`.
