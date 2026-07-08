@@ -3,46 +3,85 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Chi Sculptor · Lee Sin</title>
+<title>THE OP · echo.toe</title>
 <link rel="stylesheet" href="./style.css" />
-<!-- Sculpt a field of chi with your bare hand. Webcam required (https / localhost).
-     Static site, no build step. Edit the closing line in messages.js. -->
+<!--
+  THE OP — a mock TouchDesigner-style desktop app for Lee Sin.
+  The viewport runs ECHO: a temple that exists only while sonar pings pass
+  through it. Click the viewport / press SPACE to ping. PERFORM (F1) goes
+  fullscreen. Optional mic turns real sound into sight.
+  Static site, no build step. No Riot assets, all procedural.
+-->
 </head>
 <body>
 
-<div id="stage"></div>
-<video id="webcam" playsinline muted></video>
-<div id="flash"></div>
+<!-- ══ app chrome ══ -->
+<div id="app">
+  <header id="menubar">
+    <span class="app-dot"></span>
+    <span class="app-name">THE OP</span>
+    <nav><a>File</a><a>Edit</a><a>Network</a><a>Chi</a><a>Help</a></nav>
+    <span class="file-name">/project1/<b>echo.toe</b></span>
+    <div class="menu-right">
+      <button id="btn-mic" class="chip">ENABLE MIC</button>
+      <button id="btn-auto" class="chip on">AUTO-PING</button>
+      <button id="btn-perform" class="chip gold">PERFORM ▸</button>
+    </div>
+  </header>
 
-<div id="title"></div>
-<div id="hint"></div>
-<div id="closing"></div>
+  <div id="workspace">
+    <main id="viewport-pane">
+      <div class="pane-label">out1 · ECHO <span class="pane-hint">click to ping · space = heart-ping</span></div>
+      <div id="viewport"></div>
+    </main>
 
+    <aside id="params-pane">
+      <div class="pane-label" id="params-title">sonar · TOP</div>
+      <div id="params"></div>
+      <div class="params-foot">
+        <div class="foot-line">every parameter is live —<br>drag while it plays</div>
+      </div>
+    </aside>
+  </div>
+
+  <section id="network-pane">
+    <div class="pane-label">/project1 — network editor</div>
+    <div id="network"><svg id="cords"></svg></div>
+  </section>
+
+  <footer id="statusbar">
+    <span id="clock">00:00.00</span>
+    <span id="fps">— FPS</span>
+    <span id="quote">“A duelist needs no eyes to see.”</span>
+    <span class="rt">RT ●</span>
+  </footer>
+</div>
+
+<!-- ══ boot gate ══ -->
 <div id="loader">
-  <div class="spinner" id="spinner"></div>
-  <div class="lmsg">The blind monk awaits</div>
-  <button class="begin-btn" id="begin-btn">BEGIN</button>
-  <div class="begin-hint">allow your webcam &amp; sound when asked</div>
+  <div class="boot-logo">THE OP</div>
+  <div class="boot-sub">echo.toe — the blind monk sees what others cannot</div>
+  <button class="begin-btn" id="begin-btn">OPEN PROJECT</button>
+  <div class="boot-hint">sound on · click the viewport to ping the dark</div>
   <div id="fallback">
     <h2>A resource could not be loaded</h2>
-    <p>This pulls Three.js and MediaPipe Hands from a CDN. If a sandbox blocks
-      outside requests it won't load — download the folder and open it in
-      Chrome/Edge, or host it (GitHub Pages / Vercel).</p>
+    <p>This pulls Three.js from a CDN. If a sandbox blocks outside requests it
+      won't load — download the folder and open it in Chrome/Edge, or host it
+      (GitHub Pages / Vercel).</p>
     <p class="err" id="fallback-err"></p>
   </div>
 </div>
 
 <script>
   window.__eyeFail = function (what) {
-    var l = document.getElementById('loader'); if (l) l.style.display = 'flex';
-    var sp = document.getElementById('spinner'), fb = document.getElementById('fallback'), er = document.getElementById('fallback-err');
-    if (sp) sp.style.display = 'none'; if (fb) fb.style.display = 'block'; if (er && what) er.textContent = 'Failed: ' + what;
+    var l = document.getElementById('loader'); if (l) { l.style.display = 'flex'; l.classList.remove('gone'); }
+    var fb = document.getElementById('fallback'), er = document.getElementById('fallback-err');
+    if (fb) fb.style.display = 'block'; if (er && what) er.textContent = 'Failed: ' + what;
     window.__eyeFailed = true;
   };
   setTimeout(function () { if (!window.__eyeStarted && !window.__eyeFailed) window.__eyeFail('libraries did not load (network blocked?)'); }, 7000);
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands@0.4.1675469240/hands.js" onerror="window.__eyeFail('MediaPipe Hands')"></script>
 <script type="importmap">
 { "imports": {
   "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
